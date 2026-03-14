@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OmniScroll Live
  * Description: Premium ticker with Hex Input Color Pickers, Typography Controls, and Seamless Smooth Scroll.
- * Version: 4.2
+ * Version: 4.7
  * Author: Sibani
  * Text Domain: omniscroll-live
  */
@@ -29,14 +29,13 @@ function osl_install() {
     dbDelta( $sql );
 }
 
-// 2. GITHUB UPDATE CHECKER LOGIC (Robust Version)
+// 2. GITHUB UPDATE CHECKER LOGIC
 add_filter('pre_set_site_transient_update_plugins', 'osl_check_for_update');
 function osl_check_for_update($transient) {
     if (empty($transient->checked)) return $transient;
 
     $plugin_slug = plugin_basename(__FILE__);
     
-    // Remote request to GitHub API
     $args = [
         'timeout' => 15,
         'headers' => [
@@ -54,7 +53,6 @@ function osl_check_for_update($transient) {
             $remote_version = ltrim($release->tag_name, 'v');
             $local_version = get_plugin_data(__FILE__)['Version'];
 
-            // Compare versions
             if (version_compare($local_version, $remote_version, '<')) {
                 $obj = new stdClass();
                 $obj->slug = $plugin_slug;
@@ -68,7 +66,6 @@ function osl_check_for_update($transient) {
     return $transient;
 }
 
-// Add info modal for the update
 add_filter('plugins_api', 'osl_plugin_info', 20, 3);
 function osl_plugin_info($res, $action, $args) {
     if ($action !== 'plugin_information' || $args->slug !== plugin_basename(__FILE__)) return $res;
@@ -76,7 +73,7 @@ function osl_plugin_info($res, $action, $args) {
     $res = new stdClass();
     $res->name = 'OmniScroll Live';
     $res->slug = plugin_basename(__FILE__);
-    $res->version = 'Check GitHub for latest';
+    $res->version = '4.7';
     $res->author = 'Sibani';
     $res->homepage = "https://github.com/" . OSL_GITHUB_USER . "/" . OSL_GITHUB_REPO;
     $res->sections = ['description' => 'Updates are pulled directly from your GitHub repository.'];
@@ -121,7 +118,7 @@ function osl_settings_page() {
         <div class="flex items-center justify-between mb-8 mt-4">
             <h1 class="text-4xl font-black text-gray-800 tracking-tight italic">OmniScroll <span class="text-blue-600">Live</span></h1>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-slate-400">v<?php echo get_plugin_data(__FILE__)['Version']; ?></span>
+                <span class="text-xs font-bold text-slate-400">v4.7</span>
                 <div class="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg">By Sibani</div>
             </div>
         </div>
@@ -245,10 +242,11 @@ function osl_settings_page() {
             </div>
         </form>
 
-        <div class="mt-8 text-center">
+        <div class="mt-8 text-center flex flex-col gap-2">
             <a href="<?php echo admin_url('update-core.php?force-check=1'); ?>" class="text-slate-400 text-xs hover:text-blue-500 transition-colors uppercase font-bold tracking-tighter">
-                <i class="fa-solid fa-rotate"></i> Force WordPress to Check GitHub for Update
+                <i class="fa-solid fa-rotate"></i> Check Update
             </a>
+            <p class="text-[10px] text-slate-500 font-medium uppercase tracking-[3px]">Handcrafted with ❤️ by <span class="text-slate-400">Sibani</span></p>
         </div>
     </div>
 
