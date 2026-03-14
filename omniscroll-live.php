@@ -29,31 +29,58 @@ function osl_install() {
     dbDelta( $sql );
 }
 
-// 2. GITHUB UPDATE CHECKER LOGIC
+// 2. GITHUB UPDATE CHECKER LOGIC (Robust Version)
 add_filter('pre_set_site_transient_update_plugins', 'osl_check_for_update');
 function osl_check_for_update($transient) {
     if (empty($transient->checked)) return $transient;
 
     $plugin_slug = plugin_basename(__FILE__);
-    $res = wp_remote_get("https://api.github.com/repos/" . OSL_GITHUB_USER . "/" . OSL_GITHUB_REPO . "/releases/latest", [
-        'headers' => ['User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')]
-    ]);
+    
+    // Remote request to GitHub API
+    $args = [
+        'timeout' => 15,
+        'headers' => [
+            'User-Agent' => 'WordPress-Updater-Client',
+            'Accept'     => 'application/vnd.github.v3+json',
+        ]
+    ];
+
+    $res = wp_remote_get("https://api.github.com/repos/" . OSL_GITHUB_USER . "/" . OSL_GITHUB_REPO . "/releases/latest", $args);
 
     if (!is_wp_error($res) && wp_remote_retrieve_response_code($res) == 200) {
         $release = json_decode(wp_remote_retrieve_body($res));
-        $remote_version = ltrim($release->tag_name, 'v');
-        $local_version = get_plugin_data(__FILE__)['Version'];
+        
+        if ($release && isset($release->tag_name)) {
+            $remote_version = ltrim($release->tag_name, 'v');
+            $local_version = get_plugin_data(__FILE__)['Version'];
 
-        if (version_compare($local_version, $remote_version, '<')) {
-            $obj = new stdClass();
-            $obj->slug = $plugin_slug;
-            $obj->new_version = $remote_version;
-            $obj->url = "https://github.com/" . OSL_GITHUB_USER . "/" . OSL_GITHUB_REPO;
-            $obj->package = $release->zipball_url;
-            $transient->response[$plugin_slug] = $obj;
+            // Compare versions
+            if (version_compare($local_version, $remote_version, '<')) {
+                $obj = new stdClass();
+                $obj->slug = $plugin_slug;
+                $obj->new_version = $remote_version;
+                $obj->url = "https://github.com/" . OSL_GITHUB_USER . "/" . OSL_GITHUB_REPO;
+                $obj->package = $release->zipball_url;
+                $transient->response[$plugin_slug] = $obj;
+            }
         }
     }
     return $transient;
+}
+
+// Add info modal for the update
+add_filter('plugins_api', 'osl_plugin_info', 20, 3);
+function osl_plugin_info($res, $action, $args) {
+    if ($action !== 'plugin_information' || $args->slug !== plugin_basename(__FILE__)) return $res;
+    
+    $res = new stdClass();
+    $res->name = 'OmniScroll Live';
+    $res->slug = plugin_basename(__FILE__);
+    $res->version = 'Check GitHub for latest';
+    $res->author = 'Sibani';
+    $res->homepage = "https://github.com/" . OSL_GITHUB_USER . "/" . OSL_GITHUB_REPO;
+    $res->sections = ['description' => 'Updates are pulled directly from your GitHub repository.'];
+    return $res;
 }
 
 // 3. ADMIN MENU & ASSETS
@@ -220,7 +247,7 @@ function osl_settings_page() {
 
         <div class="mt-8 text-center">
             <a href="<?php echo admin_url('update-core.php?force-check=1'); ?>" class="text-slate-400 text-xs hover:text-blue-500 transition-colors uppercase font-bold tracking-tighter">
-                <i class="fa-solid fa-rotate"></i> Manually Check GitHub for New Version
+                <i class="fa-solid fa-rotate"></i> Force WordPress to Check GitHub for Update
             </a>
         </div>
     </div>
