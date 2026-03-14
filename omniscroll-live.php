@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OmniScroll Live
  * Description: Premium ticker with Hex Input Color Pickers, Typography Controls, and Seamless Smooth Scroll.
- * Version: 4.1
+ * Version: 4.2
  * Author: Sibani
  * Text Domain: omniscroll-live
  */
